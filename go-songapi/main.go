@@ -58,7 +58,7 @@ func getSongById(w http.ResponseWriter, r *http.Request){
 	for _,v := range songs{
 		if v.ID == params["id"]{
 		json.NewEncoder(w).Encode(v)
-	}
+		}
 	}
 }
 
