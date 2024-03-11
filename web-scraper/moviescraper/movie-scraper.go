@@ -21,11 +21,11 @@ type Movie struct{
 var URL string = "https://www.goojara.to/watch-movies-genre"
 
 func main(){
-	file, err := os.Create("movies.csv")
+	file, err := os.Create("new-movies.csv")
 	if err != nil{
 		fmt.Println("Error while creating file: ", err)
 	}
-	defer file.Close()
+	defer file.Close()c
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()

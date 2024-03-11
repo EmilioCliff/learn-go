@@ -4,6 +4,7 @@ go 1.21.6
 
 require (
 	github.com/gocolly/colly v1.2.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jinzhu/gorm v1.9.16
 )

@@ -11,7 +11,7 @@ var db *gorm.DB
 
 type Song struct{
 	gorm.Model
-	Name string `gorm:""json:"name"`
+	Name string `json:"name"`
 	Duration string `json:"song"`
 	Album string `json:"album"`
 }
