@@ -32,6 +32,7 @@ func main() {
 	if err != nil {
 		fmt.Println("Error while creating file: ", err)
 	}
+
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
