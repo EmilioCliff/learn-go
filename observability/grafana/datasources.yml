@@ -15,6 +15,7 @@ datasources:
       basicAuthUser:
       withCredentials:
       isDefault: false
+
     - name: Prometheus
       type: prometheus
       access: proxy
@@ -27,6 +28,7 @@ datasources:
       basicAuthUser:
       withCredentials:
       isDefault: true
+      
     - name: Tempo
       type: tempo
       access: proxy

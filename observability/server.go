@@ -19,22 +19,24 @@ import (
 )
 
 type Server struct {
-	router *gin.Engine
-	ln     net.Listener
-	srv    *http.Server
+	router *gin.Engine  // HTTP router using Gin
+	ln     net.Listener // TCP listener
+	srv    *http.Server // Underlying HTTP server
 
-	meter  metric.Meter
-	logger *slog.Logger
-	tracer trace.Tracer
+	meter  metric.Meter // OpenTelemetry Meter for metrics
+	logger *slog.Logger // Structured logger (bridged with OpenTelemetry)
+	tracer trace.Tracer // Tracer for distributed tracing
 
-	startTime time.Time
+	startTime time.Time // Used to calculate uptime in health check
 }
 
 func NewServer() *Server {
-	meter := otel.Meter("")
-	logger := otelslog.NewLogger("")
-	tracer := otel.Tracer("Backend")
+	// Initialize observability tools
+	meter := otel.Meter("")          // Get global Meter
+	logger := otelslog.NewLogger("") // Structured logger via Otel-Slog bridge
+	tracer := otel.Tracer("Backend") // Tracer named "Backend"
 
+	// Create server instance
 	s := &Server{
 		router: gin.Default(),
 		meter:  meter,
@@ -42,13 +44,17 @@ func NewServer() *Server {
 		tracer: tracer,
 	}
 
-	s.router.Use(otelgin.Middleware("Backend")) // otelgin middleware
-	s.router.GET("/health", s.healthCheckHandler)
-	s.router.GET("/compute", s.computeOneHandler)
-	s.router.POST("/compute", s.computeTwoHandler)
+	// Apply OpenTelemetry middleware for Gin (tracing)
+	s.router.Use(otelgin.Middleware("Backend"))
 
+	// Register routes
+	s.router.GET("/health", s.healthCheckHandler)  // Simple health check
+	s.router.GET("/compute", s.computeOneHandler)  // Simulated CPU-heavy GET route
+	s.router.POST("/compute", s.computeTwoHandler) // POST route with input parsing and delay
+
+	// Setup the HTTP server config
 	s.srv = &http.Server{
-		Addr:         ":3030",
+		Addr:         ":3030", // Server will listen on port 3030
 		Handler:      s.router.Handler(),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -85,9 +91,11 @@ func (s *Server) Stop() error {
 }
 
 func (s *Server) healthCheckHandler(c *gin.Context) {
+	// Start a new span for the health check
 	ctx, span := s.tracer.Start(c.Request.Context(), "HealthCheck")
 	defer span.End()
 
+	// Log that the health check was triggered
 	s.logger.InfoContext(ctx, "Health check requested")
 
 	c.JSON(http.StatusOK, gin.H{
@@ -98,6 +106,7 @@ func (s *Server) healthCheckHandler(c *gin.Context) {
 }
 
 func (s *Server) computeOneHandler(c *gin.Context) {
+	// Start a span for tracing the compute operation
 	ctx, span := s.tracer.Start(c.Request.Context(), "ComputeOne")
 	defer span.End()
 
@@ -113,6 +122,8 @@ func (s *Server) computeOneHandler(c *gin.Context) {
 	duration := time.Since(start)
 
 	s.logger.InfoContext(ctx, "ComputeOneHandler completed", "duration", duration, "result", result)
+
+	// Add attributes to the span
 	span.SetAttributes(
 		attribute.Int("compute.iterations", 10_000_000),
 		attribute.String("result.type", "int"),
@@ -129,6 +140,7 @@ type ComputeInput struct {
 }
 
 func (s *Server) computeTwoHandler(c *gin.Context) {
+	// Start a span for tracing the compute operation
 	ctx, span := s.tracer.Start(c.Request.Context(), "ComputeTwo")
 	defer span.End()
 
@@ -140,11 +152,6 @@ func (s *Server) computeTwoHandler(c *gin.Context) {
 		return
 	}
 
-	s.logger.InfoContext(ctx, "Processing computeTwo request", "input_length", len(input.Numbers))
-	span.SetAttributes(attribute.Int("input.count", len(input.Numbers)))
-
-	time.Sleep(time.Millisecond * time.Duration(100+len(input.Numbers)*5))
-
 	if len(input.Numbers) == 0 {
 		err := errors.New("no numbers provided")
 		s.logger.WarnContext(ctx, "Empty input received", "error", err)
@@ -153,6 +160,11 @@ func (s *Server) computeTwoHandler(c *gin.Context) {
 		return
 	}
 
+	// Log and tag trace with size of input
+	s.logger.InfoContext(ctx, "Processing computeTwo request", "input_length", len(input.Numbers))
+	span.SetAttributes(attribute.Int("input.count", len(input.Numbers)))
+
+	// Perform the sum
 	sum := 0
 	for _, num := range input.Numbers {
 		sum += num

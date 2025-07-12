@@ -12,11 +12,11 @@ import (
 )
 
 func main() {
-	// setup signal handlers.
+	// setup signal handlers
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	// create a grpc client for sending telementry data to otel collector
+	// establish a grpc connection for sending telementry data to otel collector - grafana alloy
 	conn, err := grpc.NewClient("alloy:4317", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
@@ -45,6 +45,7 @@ func main() {
 		panic(err)
 	}
 
+	// Register memory metrics (custom gauges) for periodic export
 	unregisterCPUMetrics, err := GetCPUMetrics()
 	if err != nil {
 		panic(err)
@@ -63,7 +64,7 @@ func main() {
 		log.Fatalf("Failed to stop server: %v", err)
 	}
 
-	// shutdown the providers
+	// Clean up and shutdown all the telemetry providers
 	if err := shutdownTracer(context.Background()); err != nil {
 		log.Fatal(err)
 	}
@@ -74,10 +75,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Unregister custom metrics
 	if err := unregisterCPUMetrics.Unregister(); err != nil {
 		log.Fatal(err)
 	}
 
-	// close the grpc connection
+	// Finally, close the grpc connection
 	conn.Close()
 }

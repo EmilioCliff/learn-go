@@ -10,8 +10,10 @@ import (
 )
 
 func GetCPUMetrics() (metric.Registration, error) {
+	// Get the global Meter from the OpenTelemetry MeterProvider
 	meter := otel.Meter("")
 
+	// Define observable gauges to track memory stats
 	totalAllocGauge, _ := meter.Int64ObservableGauge(
 		"memory_total_alloc",
 		metric.WithDescription("Total allocated bytes"),
@@ -37,11 +39,14 @@ func GetCPUMetrics() (metric.Registration, error) {
 		metric.WithDescription("Total system memory used"),
 	)
 
+	// Register a callback function that will be triggered on each metric collection interval
 	unregister, err := meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
-		log.Println("getting metrics")
+		log.Println("sending memory metrics")
+
 		var memStats runtime.MemStats
 		runtime.ReadMemStats(&memStats)
 
+		// Observe memory usage values and assign them to the defined gauges
 		observer.ObserveInt64(totalAllocGauge, int64(memStats.TotalAlloc))
 		observer.ObserveInt64(heapAllocGauge, int64(memStats.HeapAlloc))
 		observer.ObserveInt64(heapInuseGauge, int64(memStats.HeapInuse))
@@ -54,5 +59,6 @@ func GetCPUMetrics() (metric.Registration, error) {
 		return nil, err
 	}
 
+	// Return the unregister function so the caller can stop the observation when needed
 	return unregister, nil
 }
