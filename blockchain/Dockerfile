@@ -6,8 +6,6 @@ COPY . .
 RUN go build -o main /app/cmd/server/main.go
 
 # Run stage
-FROM ubuntu:22.04
+FROM gcr.io/distroless/base-debian12
 COPY --from=builder /app/main .
-EXPOSE 3031
-
 CMD ["./main"]
