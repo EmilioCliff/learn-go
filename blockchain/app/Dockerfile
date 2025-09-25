@@ -1,15 +1,11 @@
-FROM node:20-alpine AS build
+FROM node:20-alpine
 WORKDIR /app
 ARG VITE_GATEWAY_URL
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json .
+RUN npm install
+RUN npm i -g serve
 COPY . .
 RUN npm run build
 
-FROM gcr.io/distroless/nodejs20-debian12
-WORKDIR /app
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-
 EXPOSE 5173
-CMD ["serve", "-s", "dist"]
+CMD [ "serve", "-s", "dist" ]
