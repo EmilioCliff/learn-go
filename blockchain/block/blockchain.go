@@ -61,7 +61,7 @@ func (bc *Blockchain) CreateBlock(nonce int, previousHash [32]byte) *Block {
 	bc.transactionPool = []*Transaction{}
 
 	for _, n := range bc.neighbors {
-		if n == fmt.Sprintf("%s:%d", bc.config.HOST, bc.port) {
+		if n == fmt.Sprintf("%s", bc.config.HOST) {
 			continue
 		}
 		endpoint := fmt.Sprintf("%s/transactions", n)
@@ -85,7 +85,7 @@ func (bc *Blockchain) CreateTransaction(sender string, recipient string, value f
 	isTransacted := bc.AddTransaction(sender, recipient, value, senderPublicKey, s)
 	if isTransacted {
 		for _, n := range bc.neighbors {
-			if n == fmt.Sprintf("%s:%d", bc.config.HOST, bc.port) {
+			if n == fmt.Sprintf("%s", bc.config.HOST) {
 				continue
 			}
 			publickKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
@@ -123,13 +123,10 @@ func (bc *Blockchain) AddTransaction(sender string, recipient string, value floa
 	}
 
 	if bc.VerifyTransactionSignature(senderPublicKey, s, t) {
-		log.Println(bc.CalculateTotalAmount(sender))
-		log.Println(value)
 		if bc.CalculateTotalAmount(sender) < value {
 			log.Println("ERROR: Not enough balance in a wallet")
 			return false
 		}
-		log.Println("INFO: Verified transaction")
 		bc.transactionPool = append(bc.transactionPool, t)
 		return true
 	} else {
@@ -179,7 +176,7 @@ func (bc *Blockchain) Mining() bool {
 	bc.CreateBlock(nonce, previousHash)
 
 	for _, n := range bc.neighbors {
-		if n == fmt.Sprintf("%s:%d", bc.config.HOST, bc.port) {
+		if n == fmt.Sprintf("%s", bc.config.HOST) {
 			continue
 		}
 		enpoint := fmt.Sprintf("%s/consensus", n)
@@ -217,7 +214,7 @@ func (bc *Blockchain) ResolveConflicts() bool {
 	maxLength := len(bc.chain)
 
 	for _, n := range bc.neighbors {
-		if n == fmt.Sprintf("%s:%d", bc.config.HOST, bc.port) {
+		if n == fmt.Sprintf("%s", bc.config.HOST) {
 			continue
 		}
 		endpoint := fmt.Sprintf("%s/chain", n)
